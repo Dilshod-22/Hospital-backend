@@ -1,11 +1,35 @@
 const userModel = require("../models/userModel");
+const pendingUserModel = require("../models/pendingUserModel")
+
 
 class userServices {
   async createUser(data) {
     try {
-      const users = new userModel(data);
-      await users.save();
-      return users;
+      const checkUser = await pendingUserModel.findOne({email:data.email});
+      if(checkUser===null){
+        return "user not found or already created"
+      }
+      // let newUser = {
+      //   username:checkUser.username,
+      //   email:checkUser.email,
+      //   password:checkUser.password
+      // }
+
+      
+      if(checkUser !== null , checkUser.code === data.code && checkUser.codeExpiresAt >= new Date()){
+        const users = new userModel(checkUser);
+        const deleteUserPending = await pendingUserModel.findByIdAndDelete(checkUser._id)
+        await users.save();
+        return users;
+      }else{
+        if(checkUser.code !== data.code){
+          return "The code was entered incorrectly."
+        }else if(checkUser.codeExpiresAt < new Date()){
+          return "The code has expired."
+        }else{
+          return "undetected error"
+        }
+      }
     } catch (err) {
       throw new Error("Error creating user: " + err.message);
     }
@@ -15,8 +39,6 @@ class userServices {
     
     try {
       const allUser = await userModel.find();
-    //   console.log(allUser);
-      
       return allUser; 
     } catch (err) {
       throw new Error("Error getting all user: " + err.message);
@@ -48,6 +70,29 @@ class userServices {
       return user;
     } catch (error) {
       throw new Error("Error deleting user: " + error.message);
+    }
+  }
+
+  async createPendingUser(data){
+    try {
+      const findUser = await userModel.findOne({email:data.email});
+      if(!findUser){
+        const findUserPending = await pendingUserModel.findOne({email: data.email}); 
+        if(findUserPending){
+          findUserPending.code = data.code;
+          findUserPending.codeExpiresAt = data.codeExpiresAt;
+          await findUserPending.save();
+          return {status:201,message: "Pending user updated"};
+        }else{
+          const users = new pendingUserModel(data);
+          await users.save();
+          return {status:200,message:"pending User create"};
+        }
+      }else{
+        return {status:201,message: "This email already exist"};
+      }
+    } catch (err) {
+      throw new Error("Error creating user: " + err.message);
     }
   }
 }

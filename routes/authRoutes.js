@@ -12,9 +12,12 @@ class AuthRoutes {
         // Public routes
         // console.log("keldi");
         
-        this.router.post('/register', this.authController.register.bind(this.authController));
+        this.router.post('/register', this.authController.createPendingUSer.bind(this.authController));
         this.router.get('/getAllUsers', this.authController.getAllUsers.bind(this.authController));
-
+        this.router.delete('/deleteUser/:id', this.authController.deleteUser.bind(this.authController));
+        this.router.put('/updateUser/:id', this.authController.updateUser.bind(this.authController));
+        this.router.post('/verificationUser', this.authController.verificationUser.bind(this.authController));
+            
     }
 
     getRouter() {
